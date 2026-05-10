@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capstone Project Gantt Chart</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #f4f7fb;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2937;
+    }
+
+    .page-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .editor-panel,
+    .gantt-wrapper {
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    }
+
+    .editor-panel {
+      padding: 24px;
+      position: sticky;
+      top: 20px;
+    }
+
+    .editor-title {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: #111827;
+    }
+
+    .editor-subtitle {
+      margin-bottom: 22px;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .editor-box {
+      background: #f8fafc;
+      border: 1px solid #dbe3ee;
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    button,
+    button,
+    input,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      font-weight: 700;
+      color: #ffffff;
+      background: #2563eb;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: #111827;
+    }
+
+    .secondary-btn:hover {
+      background: #374151;
+    }
+
+    .export-title {
+      margin: 22px 0 12px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .export-note {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
+    .hint {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .gantt-wrapper {
+      max-width: 1400px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: -0.4px;
+      color: #111827;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #374151;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 8px 12px;
+      border-radius: 999px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .completed-color { background: #22c55e; }
+    .progress-color { background: #facc15; }
+    .delayed-color { background: #ef4444; }
+    .planned-color { background: #3b82f6; }
+
+    .gantt-table {
+      min-width: 1250px;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 270px 170px 140px repeat(15, 1fr);
+      min-height: 50px;
+      border-bottom: 1px solid #e5e7eb;
+      align-items: center;
+    }
+
+    .row:last-child { border-bottom: none; }
+
+    .row.header-row {
+      background: #f8fafc;
+      min-height: 46px;
+      font-weight: 700;
+      color: #374151;
+      font-size: 13px;
+    }
+
+    .row.selected-row {
+      background: #f8fbff;
+      box-shadow: inset 4px 0 0 #2563eb;
+    }
+
+    .cell {
+      padding: 12px 14px;
+      border-right: 1px solid #e5e7eb;
+      font-size: 13px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .week-cell {
+      justify-content: center;
+      padding: 8px 4px;
+    }
+
+    .task-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .person { color: #4b5563; }
+
+    .status {
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 6px 10px;
+      width: fit-content;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .status.completed { background: #dcfce7; color: #166534; }
+    .status.in-progress { background: #fef9c3; color: #854d0e; }
+    .status.delayed { background: #fee2e2; color: #991b1b; }
+    .status.planned { background: #dbeafe; color: #1e40af; }
+
+    .timeline {
+      grid-column: 4 / span 15;
+      grid-row: 1;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      position: relative;
+      align-items: center;
+      padding: 0 6px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(6.666% - 1px),
+        #eef2f7 calc(6.666% - 1px),
+        #eef2f7 6.666%
+      );
+      pointer-events: none;
+    }
+
+    .bar {
+      height: 22px;
+      border-radius: 999px;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.15);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #ffffff;
+    }
+
+    .bar.completed { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .bar.in-progress { background: linear-gradient(90deg, #eab308, #facc15); color: #111827; }
+    .bar.delayed { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .bar.planned { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+
+    .start-1 { grid-column-start: 1; }
+    .start-2 { grid-column-start: 2; }
+    .start-3 { grid-column-start: 3; }
+    .start-4 { grid-column-start: 4; }
+    .start-5 { grid-column-start: 5; }
+    .start-6 { grid-column-start: 6; }
+    .start-7 { grid-column-start: 7; }
+    .start-8 { grid-column-start: 8; }
+    .start-9 { grid-column-start: 9; }
+    .start-10 { grid-column-start: 10; }
+    .start-11 { grid-column-start: 11; }
+    .start-12 { grid-column-start: 12; }
+    .start-13 { grid-column-start: 13; }
+    .start-14 { grid-column-start: 14; }
+    .start-15 { grid-column-start: 15; }
+
+    .duration-1 { grid-column-end: span 1; }
+    .duration-2 { grid-column-end: span 2; }
+    .duration-3 { grid-column-end: span 3; }
+    .duration-4 { grid-column-end: span 4; }
+    .duration-5 { grid-column-end: span 5; }
+    .duration-6 { grid-column-end: span 6; }
+    .duration-7 { grid-column-end: span 7; }
+    .duration-8 { grid-column-end: span 8; }
+    .duration-9 { grid-column-end: span 9; }
+    .duration-10 { grid-column-end: span 10; }
+    .duration-11 { grid-column-end: span 11; }
+    .duration-12 { grid-column-end: span 12; }
+    .duration-13 { grid-column-end: span 13; }
+    .duration-14 { grid-column-end: span 14; }
+    .duration-15 { grid-column-end: span 15; }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 24px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    @media (max-width: 1200px) {
+      .page-layout { grid-template-columns: 1fr; }
+      .editor-panel { position: relative; top: unset; }
+    }
+
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+
+      .editor-panel {
+        display: none;
+      }
+
+      .page-layout {
+        display: block;
+      }
+
+      .gantt-wrapper {
+        box-shadow: none !important;
+        border-radius: 0;
+        max-width: none;
+        overflow: visible !important;
+      }
+
+      .selected-row {
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      .bar {
+        box-shadow: none !important;
+      }
+
+      .timeline::before {
+        background: repeating-linear-gradient(
+          to right,
+          transparent 0,
+          transparent calc(6.666% - 1px),
+          #e5e7eb calc(6.666% - 1px),
+          #e5e7eb 6.666%
+        ) !important;
+      }
+
+      .gantt-table,
+      .row,
+      .cell {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-layout">
+    <aside class="editor-panel">
+      <h2 class="editor-title">Edit Panel</h2>
+      <div class="editor-subtitle">Select any task and edit it without touching the code.</div>
+
+      <div class="editor-box">
+        <label for="taskSelector">Select Task</label>
+        <select id="taskSelector" onchange="loadSelectedTask()"></select>
+
+        <label for="taskName">Task Name</label>
+        <input id="taskName" type="text" oninput="updateSelectedTask()" />
+
+        <label for="personName">Responsible Person</label>
+        <input id="personName" type="text" oninput="updateSelectedTask()" />
+
+        <label for="statusSelect">Status</label>
+        <select id="statusSelect" onchange="updateSelectedTask()">
+          <option value="completed">Completed</option>
+          <option value="in-progress">In Progress</option>
+          <option value="delayed">Delayed</option>
+          <option value="planned">Planned</option>
+        </select>
+
+        <label for="startWeek">Start Week</label>
+        <input id="startWeek" type="number" min="1" max="15" oninput="updateSelectedTask()" />
+
+        <label for="durationWeek">Duration</label>
+        <input id="durationWeek" type="number" min="1" max="15" oninput="updateSelectedTask()" />
+
+        <button onclick="addNewTask()">Add New Task</button>
+        <button onclick="moveTaskUp()">Move Task Up</button>
+        <button onclick="moveTaskDown()">Move Task Down</button>
+        <button class="secondary-btn" onclick="deleteSelectedTask()">Delete Selected Task</button>
+
+        <div class="hint">
+          Example: Start Week = 5 and Duration = 4 means the bar will show W5 – W8.
+        </div>
+
+        <div class="export-title">Export</div>
+        <button onclick="downloadPNG()">Download Full Chart as PNG</button>
+        <button onclick="downloadJPEG()">Download Full Chart as JPEG</button>
+        <button onclick="downloadSVG()">Download Full Chart as SVG</button>
+        <button class="secondary-btn" onclick="downloadPDF()">Download / Save as PDF</button>
+        <div class="export-note">
+          PNG, JPEG and SVG export the full chart exactly like the preview: title, legend, table, caption, rounded white card and spacing.
+        </div>
+      </div>
+    </aside>
+
+    <main class="gantt-wrapper">
+      <div class="header">
+        <div>
+          <h1>Capstone Project Gantt Chart</h1>
+          <div class="subtitle">Materialisation phase timeline · Weeks 1–15</div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="dot completed-color"></span> Completed</div>
+          <div class="legend-item"><span class="dot progress-color"></span> In Progress</div>
+          <div class="legend-item"><span class="dot delayed-color"></span> Delayed</div>
+          <div class="legend-item"><span class="dot planned-color"></span> Planned</div>
+        </div>
+      </div>
+
+      <div class="gantt-table">
+        <div class="row header-row">
+          <div class="cell">Task Name</div>
+          <div class="cell">Responsible Person</div>
+          <div class="cell">Status</div>
+          <div class="cell week-cell">W1</div><div class="cell week-cell">W2</div><div class="cell week-cell">W3</div><div class="cell week-cell">W4</div><div class="cell week-cell">W5</div><div class="cell week-cell">W6</div><div class="cell week-cell">W7</div><div class="cell week-cell">W8</div><div class="cell week-cell">W9</div><div class="cell week-cell">W10</div><div class="cell week-cell">W11</div><div class="cell week-cell">W12</div><div class="cell week-cell">W13</div><div class="cell week-cell">W14</div><div class="cell week-cell">W15</div>
+        </div>
+
+        <div class="row task-row" data-start="1" data-duration="3"><div class="cell task-name">Project planning & coordination</div><div class="cell person">Team</div><div class="cell"><span class="status completed">Completed</span></div><div class="timeline"><div class="bar completed start-1 duration-3">W1 – W3</div></div></div>
+        <div class="row task-row" data-start="1" data-duration="3"><div class="cell task-name">Audio data collection</div><div class="cell person">Name</div><div class="cell"><span class="status completed">Completed</span></div><div class="timeline"><div class="bar completed start-1 duration-3">W1 – W3</div></div></div>
+        <div class="row task-row" data-start="2" data-duration="3"><div class="cell task-name">Dataset cleaning & balancing</div><div class="cell person">Name</div><div class="cell"><span class="status completed">Completed</span></div><div class="timeline"><div class="bar completed start-2 duration-3">W2 – W4</div></div></div>
+        <div class="row task-row" data-start="3" data-duration="3"><div class="cell task-name">Model selection & baseline setup</div><div class="cell person">Name</div><div class="cell"><span class="status in-progress">In Progress</span></div><div class="timeline"><div class="bar in-progress start-3 duration-3">W3 – W5</div></div></div>
+        <div class="row task-row" data-start="4" data-duration="4"><div class="cell task-name">Model training & experimentation</div><div class="cell person">Name</div><div class="cell"><span class="status in-progress">In Progress</span></div><div class="timeline"><div class="bar in-progress start-4 duration-4">W4 – W7</div></div></div>
+        <div class="row task-row" data-start="5" data-duration="3"><div class="cell task-name">Model evaluation & optimization</div><div class="cell person">Name</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-5 duration-3">W5 – W7</div></div></div>
+        <div class="row task-row" data-start="6" data-duration="2"><div class="cell task-name">TorchServe model deployment</div><div class="cell person">Name</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-6 duration-2">W6 – W7</div></div></div>
+        <div class="row task-row" data-start="5" data-duration="4"><div class="cell task-name">Web application development</div><div class="cell person">Name</div><div class="cell"><span class="status in-progress">In Progress</span></div><div class="timeline"><div class="bar in-progress start-5 duration-4">W5 – W8</div></div></div>
+        <div class="row task-row" data-start="7" data-duration="4"><div class="cell task-name">System integration</div><div class="cell person">Team</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-7 duration-4">W7 – W10</div></div></div>
+        <div class="row task-row" data-start="8" data-duration="3"><div class="cell task-name">Functional & performance testing</div><div class="cell person">Team</div><div class="cell"><span class="status delayed">Delayed</span></div><div class="timeline"><div class="bar delayed start-8 duration-3">W8 – W10</div></div></div>
+        <div class="row task-row" data-start="9" data-duration="2"><div class="cell task-name">Final dataset preparation</div><div class="cell person">Name</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-9 duration-2">W9 – W10</div></div></div>
+        <div class="row task-row" data-start="10" data-duration="4"><div class="cell task-name">Final report & checklist submission</div><div class="cell person">Team</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-10 duration-4">W10 – W13</div></div></div>
+        <div class="row task-row" data-start="14" data-duration="2"><div class="cell task-name">Final presentation & live demonstration</div><div class="cell person">Team</div><div class="cell"><span class="status planned">Planned</span></div><div class="timeline"><div class="bar planned start-14 duration-2">W14 – W15</div></div></div>
+      </div>
+
+      <div class="footer-note">Table 3. Gantt chart for the materialisation phase of the project.</div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    let taskRows = Array.from(document.querySelectorAll('.task-row'));
+    const taskSelector = document.getElementById('taskSelector');
+    const taskName = document.getElementById('taskName');
+    const personName = document.getElementById('personName');
+    const statusSelect = document.getElementById('statusSelect');
+    const startWeek = document.getElementById('startWeek');
+    const durationWeek = document.getElementById('durationWeek');
+
+    function statusLabel(value) {
+      if (value === 'in-progress') return 'In Progress';
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function refreshTaskRows() {
+      taskRows = Array.from(document.querySelectorAll('.task-row'));
+    }
+
+    function refreshTaskList() {
+      refreshTaskRows();
+      taskSelector.innerHTML = '';
+      taskRows.forEach((row, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = row.querySelector('.task-name').innerText;
+        taskSelector.appendChild(option);
+      });
+    }
+
+    function getSelectedRow() {
+      return taskRows[parseInt(taskSelector.value || 0)];
+    }
+
+    function loadSelectedTask() {
+      const row = getSelectedRow();
+      taskRows.forEach(r => r.classList.remove('selected-row'));
+      row.classList.add('selected-row');
+
+      taskName.value = row.querySelector('.task-name').innerText;
+      personName.value = row.querySelector('.person').innerText;
+      statusSelect.value = row.querySelector('.status').classList[1];
+      startWeek.value = row.dataset.start;
+      durationWeek.value = row.dataset.duration;
+    }
+
+    function updateSelectedTask() {
+      const row = getSelectedRow();
+      const status = statusSelect.value;
+      const start = Math.max(1, Math.min(15, parseInt(startWeek.value || 1)));
+      const duration = Math.max(1, Math.min(15, parseInt(durationWeek.value || 1)));
+      const end = Math.min(15, start + duration - 1);
+      const realDuration = end - start + 1;
+
+      row.querySelector('.task-name').innerText = taskName.value;
+      row.querySelector('.person').innerText = personName.value;
+
+      const badge = row.querySelector('.status');
+      badge.className = 'status ' + status;
+      badge.innerText = statusLabel(status);
+
+      const bar = row.querySelector('.bar');
+      bar.className = 'bar ' + status + ' start-' + start + ' duration-' + realDuration;
+      bar.innerText = 'W' + start + ' – W' + end;
+
+      row.dataset.start = start;
+      row.dataset.duration = realDuration;
+
+      refreshTaskList();
+      taskSelector.value = taskRows.indexOf(row);
+    }
+
+    function prepareChartForExport() {
+      taskRows.forEach(r => r.classList.remove('selected-row'));
+
+      const chart = document.querySelector('.gantt-wrapper');
+      const originalOverflow = chart.style.overflow;
+      chart.style.overflow = 'visible';
+
+      return { chart, originalOverflow };
+    }
+
+    function restoreChartAfterExport(chart, originalOverflow) {
+      chart.style.overflow = originalOverflow;
+      loadSelectedTask();
+    }
+
+    async function exportChart(format) {
+      const { chart, originalOverflow } = prepareChartForExport();
+
+      const canvas = await html2canvas(chart, {
+        backgroundColor: '#f4f7fb',
+        scale: 3,
+        useCORS: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: chart.scrollWidth + 80,
+        windowHeight: chart.scrollHeight + 80
+      });
+
+      const link = document.createElement('a');
+
+      if (format === 'jpeg') {
+        link.download = 'capstone-gantt-chart.jpeg';
+        link.href = canvas.toDataURL('image/jpeg', 1.0);
+      } else if (format === 'svg') {
+        const pngData = canvas.toDataURL('image/png');
+        const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}"><image href="${pngData}" width="100%" height="100%"/></svg>`;
+        const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+        link.download = 'capstone-gantt-chart.svg';
+        link.href = URL.createObjectURL(blob);
+      } else {
+        link.download = 'capstone-gantt-chart.png';
+        link.href = canvas.toDataURL('image/png');
+      }
+
+      link.click();
+      restoreChartAfterExport(chart, originalOverflow);
+    }
+
+    function downloadPNG() {
+      exportChart('png');
+    }
+
+    function downloadJPEG() {
+      exportChart('jpeg');
+    }
+
+    function downloadSVG() {
+      exportChart('svg');
+    }
+
+    function createTaskRow(task = 'New Task', person = 'Name', status = 'planned', start = 1, duration = 1) {
+      const end = Math.min(15, start + duration - 1);
+      const realDuration = end - start + 1;
+
+      const row = document.createElement('div');
+      row.className = 'row task-row';
+      row.dataset.start = start;
+      row.dataset.duration = realDuration;
+
+      row.innerHTML = `
+        <div class="cell task-name">${task}</div>
+        <div class="cell person">${person}</div>
+        <div class="cell"><span class="status ${status}">${statusLabel(status)}</span></div>
+        <div class="timeline"><div class="bar ${status} start-${start} duration-${realDuration}">W${start} – W${end}</div></div>
+      `;
+
+      return row;
+    }
+
+    function addNewTask() {
+      const table = document.querySelector('.gantt-table');
+      const newRow = createTaskRow('New Task', 'Name', 'planned', 1, 1);
+      table.appendChild(newRow);
+
+      refreshTaskList();
+      taskSelector.value = taskRows.length - 1;
+      loadSelectedTask();
+    }
+
+    function moveTaskUp() {
+      const index = parseInt(taskSelector.value || 0);
+      if (index <= 0) return;
+
+      const row = taskRows[index];
+      const previousRow = taskRows[index - 1];
+      previousRow.before(row);
+
+      refreshTaskList();
+      taskSelector.value = index - 1;
+      loadSelectedTask();
+    }
+
+    function moveTaskDown() {
+      const index = parseInt(taskSelector.value || 0);
+      if (index >= taskRows.length - 1) return;
+
+      const row = taskRows[index];
+      const nextRow = taskRows[index + 1];
+      nextRow.after(row);
+
+      refreshTaskList();
+      taskSelector.value = index + 1;
+      loadSelectedTask();
+    }
+
+    function deleteSelectedTask() {
+      if (taskRows.length <= 1) return;
+
+      const index = parseInt(taskSelector.value || 0);
+      const row = taskRows[index];
+      row.remove();
+
+      refreshTaskList();
+      taskSelector.value = Math.max(0, index - 1);
+      loadSelectedTask();
+    }
+
+    function downloadPDF() {
+      taskRows.forEach(r => r.classList.remove('selected-row'));
+      window.print();
+      setTimeout(loadSelectedTask, 500);
+    }
+
+    refreshTaskList();
+    taskSelector.value = 0;
+    loadSelectedTask();
+  </script>
+</body>
+</html>
